@@ -1,0 +1,2 @@
+Correr 60,semana
+Leer 15,día
