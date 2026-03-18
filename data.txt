@@ -1,2 +1,3 @@
-Correr 60,semana
-Leer 15,día
+Correr s 60
+Leer d 15
+Entrenar s 45
