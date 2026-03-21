@@ -7,7 +7,7 @@ class Habito:
         self.id = id
 
     def imprimir(self):
-        return(f"{self.nombre} {self.duración} {self.frecuencia}")
+        return(f"{self.nombre} {self.frecuencia} {self.duración}")
     
     def guardar_habito(self):
         with open("data.txt", "a", encoding="utf-8") as file:
@@ -17,9 +17,3 @@ class Habito:
         with open("data.txt", "r", encoding="utf-8") as file:
             for linea in file:
                 self.id +=1
-
-    def eliminar_habito(self):
-        with open("data.txt", "w", encoding="utf-8") as file:
-            lines = file.readlines()
-            del lines[self.id]
-            file.writelines(lines)

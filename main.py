@@ -22,9 +22,7 @@ while usr_input != "q":
     print("Qué desea hacer? \n\nc - Crear un hábito\ne - Eliminar un hábito\nq - Salir\n")
     for pos, habito in enumerate(lista_habitos, start = 0):
         print(f"{pos} - {habito.nombre}")
-    for habito in lista_habitos:
-        print(f"{habito.nombre} {habito.duración} {habito.frecuencia}")
-    
+
     usr_input = input("> ")
     if usr_input == "c":
         nombre = input("Qué hábito quiere adquirir?: ")
@@ -34,20 +32,30 @@ while usr_input != "q":
         habito = Habito.Habito(nombre=nombre, frecuencia=frecuencia, duración=duración, id=id)
         lista_habitos.append(habito)
 
-    elif usr_input == "d":
-        nombre = input("Qué hábito desea eliminar? ")
-        for x in lista_habitos:
-            if x.nombre == nombre:
-                numero_linea = lista_habitos.index(x)
-                del x
-        habito = Habito.Habito(nombre=nombre, duración=None, frecuencia=None, id = numero_linea)
-        habito.eliminar_habito()
+    elif usr_input == "e":
+        id = int(input("Introduzca el ID del hábito a eliminar: "))
+        del lista_habitos[id-1]
 
     elif usr_input == "q":
         with open("data.txt", "w", encoding="utf-8") as file:    
             for habito in lista_habitos:
-                file.write(f"{habito.nombre} {habito.duración} {habito.frecuencia}")
+                file.write(f"{habito.nombre} {habito.frecuencia} {habito.duración}")
+            file.write("")
 
     else:
-        print(lista_habitos[int(usr_input)].imprimir())
-        input(" ")
+        try:
+            habito = lista_habitos[int(usr_input)]
+            print(habito.imprimir())
+            print("Qué desea hacer?: \n\nc - Marcar como cumplido \ne - Editar hábito\nq - Volver al menú")
+            usr_input = input("> ")
+
+            if usr_input == "c":
+                habito.cumplido = True
+                print("Hábito marcado con éxito")
+
+            elif usr_input == "e":
+                habito.frecuencia = input("Con qué frecuencia desea realizar este hábito? ")
+                habito.duración = "".join(input("Durante cuánto tiempo desea realizar este hábito? "), "\n")
+        except:
+            print("Por favor, escoja una de las opciones")
+            input(" ")
