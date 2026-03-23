@@ -1,4 +1,2 @@
-Correr s 60
-Leer s 60
-Entrenar s 45
-Estudiar d 15
+Leer d 20 False
+Estudiar d 15 True

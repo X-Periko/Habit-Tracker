@@ -1,5 +1,6 @@
 import Habito
 import os
+import time as t
 
 def clear():
     for x in range(0,1000):
@@ -12,9 +13,20 @@ with open("data.txt", "r", encoding="utf-8") as file:
             nombre = linea_lista[0]
             frecuencia = linea_lista[1]
             duración = linea_lista[2]
+            cumplido = linea_lista[3]
             id = numero_linea
-            habito = Habito.Habito(nombre=nombre, duración=duración, frecuencia=frecuencia, id=id)
+            habito = Habito.Habito(nombre=nombre, duración=duración, frecuencia=frecuencia, id=id, cumplido=cumplido)
             lista_habitos.append(habito)
+
+with open("time.txt", "r", encoding="utf-8") as time:
+    for habito in lista_habitos:
+        if habito.cumplido == True:
+            if habito.frecuencia == "d" and t.time() - time.read() > 86400:
+                habito.cumplido = False
+            if habito.frecuencia == "s" and t.time() - time.read() > 604800:
+                habito.cumplido = False
+            if habito.frecuencia == "m" and t.time() - time.read() > 2592000:
+                habito.cumplido = False
 
 usr_input = input(">")
 while usr_input != "q":
@@ -29,18 +41,21 @@ while usr_input != "q":
         frecuencia = input("Con que frecuencia desea hacerlo? (diario, semanal, mensual): ")
         duración = input("Durante cuánto tiempo desea hacerlo? (duración en minutos): ")
         id = len(lista_habitos) +1
-        habito = Habito.Habito(nombre=nombre, frecuencia=frecuencia, duración=duración, id=id)
+        habito = Habito.Habito(nombre=nombre, frecuencia=frecuencia, duración=duración, id=id, cumplido = False)
         lista_habitos.append(habito)
 
     elif usr_input == "e":
         id = int(input("Introduzca el ID del hábito a eliminar: "))
-        del lista_habitos[id-1]
+        del lista_habitos[id]
 
     elif usr_input == "q":
-        with open("data.txt", "w", encoding="utf-8") as file:    
+        with open("data.txt", "w", encoding="utf-8") as file:  
             for habito in lista_habitos:
-                file.write(f"{habito.nombre} {habito.frecuencia} {habito.duración}")
-            file.write("")
+                file.write(f"{habito.nombre} {habito.frecuencia} {habito.duración} {habito.cumplido}")
+            file.write("\n")
+
+        with open("time.txt", "w", encoding="utf-8") as time:
+            time.write(str(t.time()))
 
     else:
         try:
@@ -55,7 +70,11 @@ while usr_input != "q":
 
             elif usr_input == "e":
                 habito.frecuencia = input("Con qué frecuencia desea realizar este hábito? ")
-                habito.duración = "".join(input("Durante cuánto tiempo desea realizar este hábito? "), "\n")
-        except:
+                habito.duración = input("Durante cuánto tiempo desea realizar este hábito? ")
+
+            elif usr_input == "q":
+                usr_input = ""
+                continue
+        except ValueError:
             print("Por favor, escoja una de las opciones")
             input(" ")

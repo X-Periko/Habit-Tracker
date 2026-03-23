@@ -1,13 +1,13 @@
 class Habito:
-    def __init__(self, nombre, frecuencia, duración, id):
+    def __init__(self, nombre, frecuencia, duración, id, cumplido):
         self.nombre = nombre
         self.frecuencia = frecuencia
         self.duración = duración
-        self.cumplido = False
+        self.cumplido = cumplido
         self.id = id
 
     def imprimir(self):
-        return(f"{self.nombre} {self.frecuencia} {self.duración}")
+        return(f"{self.nombre} {self.frecuencia} {self.duración} {self.cumplido}")
     
     def guardar_habito(self):
         with open("data.txt", "a", encoding="utf-8") as file:
