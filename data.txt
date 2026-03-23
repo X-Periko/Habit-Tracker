@@ -1,2 +1,2 @@
 Leer d 20 False
-Estudiar d 15 True
+Correr d 45 True
