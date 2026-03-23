@@ -6,6 +6,7 @@ def clear():
     for x in range(0,1000):
         print("")
 lista_habitos = []
+habitos_añadidos = False
 
 with open("data.txt", "r", encoding="utf-8") as file:
         for numero_linea, linea in enumerate(file, start=1):
@@ -19,13 +20,16 @@ with open("data.txt", "r", encoding="utf-8") as file:
             lista_habitos.append(habito)
 
 with open("time.txt", "r", encoding="utf-8") as time:
+    date = t.strftime("%Y-%m-%d")
+    sectioned_date = date.split("-")
+    save_date = time.read().split("-")
     for habito in lista_habitos:
         if habito.cumplido == True:
-            if habito.frecuencia == "d" and t.time() - time.read() > 86400:
+            if habito.frecuencia == "d" and save_date[2] < sectioned_date[2] or save_date[1] < sectioned_date[1] or save_date[0] < sectioned_date[0]:
                 habito.cumplido = False
-            if habito.frecuencia == "s" and t.time() - time.read() > 604800:
+            if habito.frecuencia == "m" and save_date[1] < sectioned_date[1] or save_date[0] < sectioned_date[0]:
                 habito.cumplido = False
-            if habito.frecuencia == "m" and t.time() - time.read() > 2592000:
+            if habito.frecuencia == "s" and save_date[2] - sectioned_date[2] == 7:
                 habito.cumplido = False
 
 usr_input = input(">")
@@ -43,6 +47,7 @@ while usr_input != "q":
         id = len(lista_habitos) +1
         habito = Habito.Habito(nombre=nombre, frecuencia=frecuencia, duración=duración, id=id, cumplido = False)
         lista_habitos.append(habito)
+        habitos_añadidos = True
 
     elif usr_input == "e":
         id = int(input("Introduzca el ID del hábito a eliminar: "))
@@ -52,10 +57,11 @@ while usr_input != "q":
         with open("data.txt", "w", encoding="utf-8") as file:  
             for habito in lista_habitos:
                 file.write(f"{habito.nombre} {habito.frecuencia} {habito.duración} {habito.cumplido}")
-            file.write("\n")
+            if habitos_añadidos:
+                file.write("\n")
 
         with open("time.txt", "w", encoding="utf-8") as time:
-            time.write(str(t.time()))
+            time.write(str(t.strftime("%Y-%m-%d")))
 
     else:
         try:
