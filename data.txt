@@ -1,2 +1,0 @@
-Leer d 20 False
-Correr d 45 True

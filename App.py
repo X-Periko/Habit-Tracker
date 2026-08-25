@@ -1,100 +1,84 @@
 import Habito
-import os
-import time as t
+import database
+from datetime import date
+
+DIAS_LIMITE = {"d": 1, "s": 7, "m": 30}
+
 
 def clear():
-    for x in range(0,1000):
+    for x in range(0, 1000):
         print("")
-lista_habitos = []
-habitos_añadidos = False
+
 
 class App:
     def __init__(self):
-        self.lista_habitos = []
-        with open("data.txt", "r", encoding="utf-8") as file:
-            for numero_linea, linea in enumerate(file, start=1):
-                linea_lista = linea.split(" ")
-                nombre = linea_lista[0]
-                frecuencia = linea_lista[1]
-                duración = linea_lista[2]
-                cumplido = linea_lista[3]
-                id = numero_linea
-                habito = Habito.Habito(nombre=nombre, duración=duración, frecuencia=frecuencia, id=id, cumplido=cumplido)
-                self.lista_habitos.append(habito)
-        
-        with open("time.txt", "r", encoding="utf-8") as time:
-            date = t.strftime("%Y-%m-%d")
-            sectioned_date = date.split("-")
-            save_date = time.read().split("-")
-            for habito in self.lista_habitos:
-                if habito.cumplido == True:
-                    if habito.frecuencia == "d" and save_date[2] < sectioned_date[2] or save_date[1] < sectioned_date[1] or save_date[0] < sectioned_date[0]:
-                        habito.cumplido = False
-                    if habito.frecuencia == "m" and save_date[1] < sectioned_date[1] or save_date[0] < sectioned_date[0]:
-                        habito.cumplido = False
-                    if habito.frecuencia == "s" and save_date[2] - sectioned_date[2] == 7:
-                        habito.cumplido = False
+        database.crear_tablas()
+        self.lista_habitos = Habito.Habito.cargar_todos()
+        self._resetear_habitos_vencidos()
 
-    def crear_habito(self, nombre, frecuencia, duración):
-        id = len(lista_habitos) +1
-        habito = Habito.Habito(nombre=nombre, frecuencia=frecuencia, duración=duración, id=id, cumplido = False)
+    def _resetear_habitos_vencidos(self):
+        hoy = date.today()
+        for habito in self.lista_habitos:
+            if not habito.cumplido or not habito.ultima_actualizacion:
+                continue
+            dias_transcurridos = (hoy - date.fromisoformat(habito.ultima_actualizacion)).days
+            limite = DIAS_LIMITE.get(habito.frecuencia, 1)
+            if dias_transcurridos >= limite:
+                habito.cumplido = False
+                habito.guardar()
+
+    def crear_habito(self, nombre, frecuencia, duracion):
+        habito = Habito.Habito(nombre=nombre, frecuencia=frecuencia, duracion=duracion, cumplido=False)
+        habito.guardar()
         self.lista_habitos.append(habito)
-        global habitos_añadidos
-        habitos_añadidos = True
-
-    def guardar(self):
-        with open("data.txt", "w", encoding="utf-8") as file:  
-                for habito in self.lista_habitos:
-                    file.write(f"{habito.nombre} {habito.frecuencia} {habito.duración} {habito.cumplido}")
-                if habitos_añadidos:
-                    file.write("\n")
-
-        with open("time.txt", "w", encoding="utf-8") as time:
-            time.write(str(t.strftime("%Y-%m-%d")))
 
     def mainloop(self):
         usr_input = input(">")
         while usr_input != "q":
             clear()
             print("Qué desea hacer? \n\nc - Crear un hábito\ne - Eliminar un hábito\nq - Salir\n")
-            for pos, habito in enumerate(self.lista_habitos, start = 0):
+            for pos, habito in enumerate(self.lista_habitos, start=0):
                 print(f"{pos} - {habito.nombre}")
 
             usr_input = input("> ")
             if usr_input == "c":
                 nombre = input("Qué hábito quiere adquirir?: ")
-                frecuencia = input("Con que frecuencia desea hacerlo? (diario, semanal, mensual): ")
-                duración = input("Durante cuánto tiempo desea hacerlo? (duración en minutos): ")
-                self.crear_habito(nombre=nombre, frecuencia=frecuencia, duración=duración)
+                frecuencia = input("Con que frecuencia desea hacerlo? (d/s/m): ")
+                duracion = int(input("Durante cuánto tiempo desea hacerlo? (minutos): "))
+                self.crear_habito(nombre=nombre, frecuencia=frecuencia, duracion=duracion)
 
             elif usr_input == "e":
-                id = int(input("Introduzca el ID del hábito a eliminar: "))
-                del self.lista_habitos[id]
+                pos = int(input("Introduzca la posición del hábito a eliminar: "))
+                try:
+                    habito = self.lista_habitos.pop(pos)
+                    habito.eliminar()
+                except IndexError:
+                    print("[!] Ningún hábito coincide con esa posición")
+                    input(" ")
 
             elif usr_input == "q":
-                self.guardar()
-                
+                pass 
+
             else:
                 try:
                     habito = self.lista_habitos[int(usr_input)]
                     print(habito.imprimir())
                     print("Qué desea hacer?: \n\nc - Marcar como cumplido \ne - Editar hábito\nq - Volver al menú")
-                    usr_input = input("> ")
+                    accion = input("> ")
 
-                    if usr_input == "c":
-                        habito.cumplido = True
+                    if accion == "c":
+                        habito.marcar_cumplido()
                         print("Hábito marcado con éxito")
 
-                    elif usr_input == "e":
-                        habito.frecuencia = input("Con qué frecuencia desea realizar este hábito? ")
-                        habito.duración = input("Durante cuánto tiempo desea realizar este hábito? ")
+                    elif accion == "e":
+                        habito.frecuencia = input("Con qué frecuencia desea realizar este hábito? (d/s/m): ")
+                        habito.duracion = int(input("Durante cuánto tiempo desea realizar este hábito? (minutos): "))
+                        habito.guardar()
 
-                    elif usr_input == "q":
-                        usr_input = ""
-                        continue
                 except ValueError:
                     print("Por favor, escoja una de las opciones")
-                    input(" ")          
+                    input(" ")
 
-app = App()  
+
+app = App()
 app.mainloop()
