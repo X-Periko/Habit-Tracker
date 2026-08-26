@@ -14,9 +14,9 @@ class App:
     def __init__(self):
         database.crear_tablas()
         self.lista_habitos = Habito.Habito.cargar_todos()
-        self._resetear_habitos_vencidos()
+        self.resetear_habitos_vencidos()
 
-    def _resetear_habitos_vencidos(self):
+    def resetear_habitos_vencidos(self):
         hoy = date.today()
         for habito in self.lista_habitos:
             if not habito.cumplido or not habito.ultima_actualizacion:

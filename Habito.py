@@ -20,7 +20,6 @@ class Habito:
                 f"    - {estado}\n")
 
     def guardar(self):
-        """Inserta el hábito si es nuevo (self.id is None), o actualiza la fila existente."""
         with database.conectar() as conn:
             if self.id is None:
                 cursor = conn.execute(
