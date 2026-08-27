@@ -120,6 +120,10 @@ def neo_textfield(label, *, value="", hint="", password=False,
             can_reveal_password=password,
             keyboard_type=keyboard_type,
             border=ft.InputBorder.NONE,
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.TRANSPARENT,
+            border_width=0,
+            focused_border_width=0,
             filled=True,
             fill_color=BG,
             color=TEXT_PRIMARY,
@@ -131,9 +135,10 @@ def neo_textfield(label, *, value="", hint="", password=False,
     )
 
 
-def neo_button(label, *, on_click, icon=None, primary=True, width=None):
+def neo_button(label, *, on_click, icon=None, primary=True, width=None, color=None):
     """Botón elevado estilo neomorfista."""
-    color = ACCENT if primary else TEXT_SECONDARY
+    if color is None:
+        color = ACCENT if primary else TEXT_SECONDARY
     return neo_surface(
         ft.Row(
             controls=[
@@ -422,20 +427,64 @@ class HabitTrackerApp:
         )
 
     # ------------------------------------------------------------------ #
-    #  Diálogos
+    #  Diálogos neomorfistas (Container en overlay; sin scrim morado)
     # ------------------------------------------------------------------ #
+    def _show_neo_dialog(self, body: ft.Control, on_close=None):
+        """Muestra un diálogo centrado con tarjeta neomórfica y scrim sutil."""
+        tarjeta = neo_surface(
+            body,
+            padding=22,
+            radius=24,
+            width=320,
+        )
+        tarjeta.animate_scale = ft.Animation(180, ft.AnimationCurve.EASE_OUT_BACK)
+        tarjeta.scale = 1.0
+
+        scrim = ft.Container(
+            expand=True,
+            bgcolor=ft.Colors.with_opacity(0.55, BG_DEEP),
+            on_click=lambda _: self._close_dialog(),
+            ink=False,
+        )
+
+        stack = ft.Stack(
+            controls=[scrim,
+                      ft.Container(content=tarjeta,
+                                   alignment=ft.Alignment.CENTER)],
+            expand=True,
+        )
+
+        self._dialog_overlay = stack
+        self._on_dialog_close = on_close
+        self.page.overlay.append(stack)
+        self.page.update()
+
+    def _close_dialog(self):
+        if self._dialog_overlay in self.page.overlay:
+            self.page.overlay.remove(self._dialog_overlay)
+        if getattr(self, "_on_dialog_close", None):
+            cb, self._on_dialog_close = self._on_dialog_close, None
+            cb()
+        self.page.update()
+
     def _open_form_dialog(self, habito: Habito.Habito | None = None):
         es_edicion = habito is not None
         titulo = "Editar hábito" if es_edicion else "Nuevo hábito"
 
-        # Campos
+        # --- Campos ---
         nombre_field = ft.TextField(
             label="Nombre", value=habito.nombre if es_edicion else "",
             border=ft.InputBorder.NONE, filled=True, fill_color=BG,
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.TRANSPARENT,
+            border_width=0,
+            focused_border_width=0,
             color=TEXT_PRIMARY,
             label_style=ft.TextStyle(color=TEXT_SECONDARY, size=12),
             text_size=14,
+            content_padding=ft.Padding.symmetric(horizontal=12, vertical=8),
         )
+        nombre_input = neo_inset(nombre_field, padding=2, radius=14)
 
         inicial_freq = habito.frecuencia if es_edicion else "d"
         freq_radio = ft.RadioGroup(
@@ -446,9 +495,14 @@ class HabitTrackerApp:
                     ft.Radio(value="m", label="Mensual"),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
-                spacing=10,
+                spacing=6,
             ),
             value=inicial_freq,
+        )
+        freq_inset = neo_inset(
+            ft.Container(content=freq_radio,
+                         padding=ft.Padding.symmetric(horizontal=8, vertical=4)),
+            padding=2, radius=14,
         )
 
         duracion_field = ft.TextField(
@@ -456,15 +510,20 @@ class HabitTrackerApp:
             value=str(habito.duracion) if es_edicion else "",
             keyboard_type=ft.KeyboardType.NUMBER,
             border=ft.InputBorder.NONE, filled=True, fill_color=BG,
+            border_color=ft.Colors.TRANSPARENT,
+            focused_border_color=ft.Colors.TRANSPARENT,
+            border_width=0,
+            focused_border_width=0,
             color=TEXT_PRIMARY,
             label_style=ft.TextStyle(color=TEXT_SECONDARY, size=12),
             text_size=14,
+            content_padding=ft.Padding.symmetric(horizontal=12, vertical=8),
         )
+        duracion_input = neo_inset(duracion_field, padding=2, radius=14)
 
-        # Error label
         error_text = ft.Text("", color=ACCENT_DANGER, size=12)
 
-        def guardar(_):
+        def do_save(_=None):
             nombre = nombre_field.value.strip()
             try:
                 duracion = int(duracion_field.value)
@@ -492,70 +551,98 @@ class HabitTrackerApp:
                 )
                 nuevo.guardar()
                 self.lista_habitos.append(nuevo)
-            self.page.pop_dialog()
+            self._close_dialog()
             self._show_main()
             self._snack("Hábito guardado ✓")
 
-        def cancelar(_):
-            self.page.pop_dialog()
+        def do_cancel(_=None):
+            self._close_dialog()
 
-        dialog = ft.AlertDialog(
-            modal=True,
-            bgcolor=BG,
-            shape=ft.RoundedRectangleBorder(radius=24),
-            title=ft.Text(titulo, color=TEXT_PRIMARY,
-                          weight=ft.FontWeight.W_700, size=18),
-            content=ft.Container(
-                width=300,
-                content=ft.Column(
+        body = ft.Column(
+            controls=[
+                ft.Text(titulo, color=TEXT_PRIMARY,
+                        weight=ft.FontWeight.W_700, size=18),
+                ft.Container(height=14),
+                nombre_input,
+                ft.Container(height=10),
+                ft.Text("Frecuencia", size=11, color=TEXT_SECONDARY),
+                ft.Container(height=4),
+                freq_inset,
+                ft.Container(height=10),
+                duracion_input,
+                ft.Container(height=6),
+                error_text,
+                ft.Container(height=14),
+                ft.Row(
                     controls=[
-                        nombre_field,
-                        ft.Container(height=14),
-                        ft.Text("Frecuencia", size=12, color=TEXT_SECONDARY),
-                        freq_radio,
-                        ft.Container(height=14),
-                        duracion_field,
-                        ft.Container(height=8),
-                        error_text,
+                        neo_button("Cancelar", on_click=do_cancel,
+                                   primary=False, width=120),
+                        neo_button("Guardar", on_click=do_save,
+                                   icon=ft.Icons.CHECK, primary=True, width=120),
                     ],
-                    tight=True,
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    spacing=10,
                 ),
-            ),
-            actions=[
-                ft.TextButton("Cancelar", on_click=cancelar),
-                ft.TextButton("Guardar", on_click=guardar),
             ],
+            tight=True,
         )
-        self.page.show_dialog(dialog)
+
+        self._show_neo_dialog(body)
 
     def _open_confirm_delete(self, habito: Habito.Habito):
-        def si(_):
+        def do_delete(_=None):
             if habito in self.lista_habitos:
                 self.lista_habitos.remove(habito)
             habito.eliminar()
-            self.page.pop_dialog()
+            self._close_dialog()
             self._show_main()
             self._snack("Hábito eliminado")
 
-        def no(_):
-            self.page.pop_dialog()
+        def do_cancel(_=None):
+            self._close_dialog()
 
-        dialog = ft.AlertDialog(
-            modal=True,
-            bgcolor=BG,
-            shape=ft.RoundedRectangleBorder(radius=24),
-            title=ft.Text("¿Eliminar hábito?",
-                          color=TEXT_PRIMARY,
-                          weight=ft.FontWeight.W_700, size=18),
-            content=ft.Text(
-                f"Vas a eliminar «{habito.nombre}». Esta acción no se puede deshacer.",
-                color=TEXT_SECONDARY, size=13),
-            actions=[
-                ft.TextButton("Cancelar", on_click=no),
-                ft.TextButton("Eliminar", on_click=si),
+        body = ft.Column(
+            controls=[
+                ft.Row(
+                    controls=[
+                        ft.Container(
+                            width=44, height=44,
+                            border_radius=ft.BorderRadius(14, 14, 14, 14),
+                            bgcolor=BG,
+                            shadow=_box_shadow(BG_DEEP, BG_LIGHT,
+                                                blur=10, offset=3),
+                            content=ft.Icon(ft.Icons.DELETE_OUTLINE,
+                                            color=ACCENT_DANGER, size=22),
+                            alignment=ft.Alignment.CENTER,
+                        ),
+                        ft.Container(width=12),
+                        ft.Text("¿Eliminar hábito?",
+                                color=TEXT_PRIMARY,
+                                weight=ft.FontWeight.W_700, size=18),
+                    ],
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+                ft.Container(height=14),
+                ft.Text(
+                    f"Vas a eliminar «{habito.nombre}». Esta acción no se puede deshacer.",
+                    color=TEXT_SECONDARY, size=13),
+                ft.Container(height=18),
+                ft.Row(
+                    controls=[
+                        neo_button("Cancelar", on_click=do_cancel,
+                                   primary=False, width=120),
+                        neo_button("Eliminar", on_click=do_delete,
+                                   icon=ft.Icons.DELETE_OUTLINE,
+                                   primary=False, width=120,
+                                   color=ACCENT_DANGER),
+                    ],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    spacing=10,
+                ),
             ],
+            tight=True,
         )
-        self.page.show_dialog(dialog)
+        self._show_neo_dialog(body)
 
     # ------------------------------------------------------------------ #
     #  Acciones
